@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#07111f" />
+  <meta name="description" content="Digital Circuit Workflow Design — منهجية تصميم أتمتة الذكاء الاصطناعي في n8n مستوحاة من الدوائر الرقمية." />
+  <title>Digital Circuit Workflow Design</title>
+  <style>
+    :root {
+      --bg: #07111f;
+      --bg-soft: #0b1a2d;
+      --panel: rgba(15, 34, 57, .78);
+      --line: rgba(150, 190, 226, .17);
+      --text: #edf6ff;
+      --muted: #9bb0c8;
+      --accent: #59d6c0;
+      --accent-2: #81a9ff;
+      --warning: #ffcf70;
+      --shadow: 0 24px 70px rgba(0, 0, 0, .22);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 12% 0%, rgba(89, 214, 192, .13), transparent 28rem),
+        radial-gradient(circle at 100% 18%, rgba(129, 169, 255, .12), transparent 30rem),
+        var(--bg);
+      font-family: "Noto Sans Arabic", "Segoe UI", Tahoma, Arial, sans-serif;
+      line-height: 1.8;
+    }
+    a { color: inherit; text-decoration: none; }
+    .shell { width: min(1160px, calc(100% - 40px)); margin: 0 auto; }
+    .topbar { padding: 22px 0; border-bottom: 1px solid var(--line); }
+    .topbar-inner { display: flex; justify-content: space-between; align-items: center; gap: 24px; }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; letter-spacing: -.02em; }
+    .brand-mark { width: 34px; height: 34px; display: grid; place-items: center; color: var(--bg); background: var(--accent); border-radius: 10px; font-weight: 900; }
+    nav { display: flex; flex-wrap: wrap; gap: 20px; color: var(--muted); font-size: .92rem; }
+    nav a:hover { color: var(--text); }
+    .hero { padding: 90px 0 74px; display: grid; grid-template-columns: 1.15fr .85fr; align-items: center; gap: 68px; }
+    .eyebrow { color: var(--accent); font-size: .83rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { margin: 16px 0 20px; max-width: 700px; font-size: clamp(2.5rem, 6vw, 5.4rem); line-height: 1.05; letter-spacing: -.06em; }
+    .lead { margin: 0; max-width: 650px; color: var(--muted); font-size: 1.13rem; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+    .button { display: inline-flex; justify-content: center; align-items: center; min-height: 46px; padding: 0 18px; border: 1px solid var(--line); border-radius: 12px; color: var(--text); background: rgba(255,255,255,.04); font-weight: 700; transition: .2s ease; }
+    .button:hover { transform: translateY(-2px); border-color: rgba(89, 214, 192, .65); background: rgba(89, 214, 192, .12); }
+    .button.primary { border-color: transparent; color: #04151a; background: var(--accent); }
+    .button.primary:hover { background: #83ebd9; }
+    .circuit { position: relative; min-height: 360px; padding: 22px; border: 1px solid var(--line); border-radius: 28px; background: linear-gradient(145deg, rgba(18, 44, 72, .94), rgba(7, 17, 31, .76)); box-shadow: var(--shadow); overflow: hidden; }
+    .circuit::before, .circuit::after { content: ""; position: absolute; inset: 12%; border: 1px solid rgba(89,214,192,.18); border-radius: 50%; transform: rotate(18deg); }
+    .circuit::after { inset: 24% 8%; border-color: rgba(129,169,255,.17); transform: rotate(-21deg); }
+    .node { position: absolute; display: grid; place-items: center; width: 92px; height: 92px; border: 1px solid rgba(89,214,192,.48); border-radius: 22px; color: var(--accent); background: #0a2031; box-shadow: 0 0 0 8px rgba(89,214,192,.045), 0 15px 36px rgba(0,0,0,.22); text-align: center; font-size: .75rem; font-weight: 800; }
+    .node-a { top: 28px; right: 34px; } .node-b { top: 134px; left: 28px; color: var(--accent-2); border-color: rgba(129,169,255,.5); } .node-c { bottom: 30px; right: 38px; color: var(--warning); border-color: rgba(255,207,112,.5); }
+    .wire { position: absolute; height: 1px; background: linear-gradient(90deg, transparent, var(--accent), transparent); transform-origin: right center; opacity: .7; }
+    .wire.one { top: 106px; right: 106px; width: 190px; transform: rotate(153deg); } .wire.two { top: 179px; left: 105px; width: 176px; transform: rotate(-27deg); } .wire.three { bottom: 95px; right: 106px; width: 184px; transform: rotate(153deg); }
+    .section { padding: 58px 0; }
+    .section-heading { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin-bottom: 24px; }
+    h2 { margin: 0; font-size: clamp(1.65rem, 3vw, 2.45rem); line-height: 1.2; letter-spacing: -.04em; }
+    .section-heading p { max-width: 560px; margin: 0; color: var(--muted); }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .card { padding: 22px; border: 1px solid var(--line); border-radius: 18px; background: var(--panel); backdrop-filter: blur(10px); }
+    .card h3 { margin: 0 0 8px; font-size: 1.04rem; } .card p { margin: 0; color: var(--muted); font-size: .94rem; }
+    .tag { display: inline-block; margin-bottom: 16px; padding: 4px 9px; border-radius: 999px; color: var(--accent); background: rgba(89,214,192,.09); font-size: .75rem; font-weight: 800; }
+    .method { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; counter-reset: steps; }
+    .step { position: relative; min-height: 155px; padding: 18px; border-top: 2px solid var(--accent); background: linear-gradient(180deg, rgba(89,214,192,.1), transparent); }
+    .step::before { counter-increment: steps; content: "0" counter(steps); color: var(--accent); font-size: .78rem; font-weight: 900; }
+    .step h3 { margin: 10px 0 6px; font-size: .98rem; } .step p { margin: 0; color: var(--muted); font-size: .86rem; }
+    .examples { display: grid; grid-template-columns: 1.25fr .75fr; gap: 18px; align-items: stretch; }
+    .example-list { display: grid; gap: 10px; }
+    .example { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 15px 17px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.035); }
+    .example strong { display: block; } .example span { color: var(--muted); font-size: .82rem; }
+    .download { flex: 0 0 auto; color: var(--accent); font-size: .83rem; font-weight: 800; }
+    .quote { display: flex; flex-direction: column; justify-content: center; padding: 28px; border-radius: 20px; background: linear-gradient(145deg, rgba(129,169,255,.15), rgba(89,214,192,.08)); border: 1px solid var(--line); }
+    blockquote { margin: 0; font-size: 1.15rem; line-height: 1.65; font-weight: 700; } .quote small { margin-top: 17px; color: var(--muted); }
+    .notice { margin-top: 20px; padding: 16px 18px; border-right: 3px solid var(--warning); border-radius: 10px; color: #dfcba2; background: rgba(255,207,112,.06); font-size: .9rem; }
+    footer { margin-top: 40px; padding: 30px 0 44px; border-top: 1px solid var(--line); color: var(--muted); font-size: .86rem; }
+    footer .footer-inner { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+    @media (max-width: 850px) { .hero, .examples { grid-template-columns: 1fr; } .grid { grid-template-columns: repeat(2, 1fr); } .method { grid-template-columns: repeat(2, 1fr); } .circuit { min-height: 300px; } }
+    @media (max-width: 560px) { .shell { width: min(100% - 28px, 1160px); } .topbar-inner, .section-heading { align-items: flex-start; flex-direction: column; } nav { gap: 12px; } .hero { padding-top: 58px; } h1 { font-size: 2.85rem; } .grid, .method { grid-template-columns: 1fr; } .example { align-items: flex-start; flex-direction: column; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <a class="brand" href="#top"><span class="brand-mark">⊕</span><span>Digital Circuit Workflow Design</span></a>
+      <nav aria-label="التنقل الرئيسي"><a href="#patterns">الأنماط</a><a href="#method">المنهج</a><a href="#examples">الأمثلة</a><a href="https://github.com/mylawmhmd2-cmd/n8n-Dcwd" target="_blank" rel="noreferrer">GitHub ↗</a></nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="shell hero">
+      <div>
+        <div class="eyebrow">Logic for reliable AI automation</div>
+        <h1>حوّل منطق الدوائر إلى سير عمل أذكى.</h1>
+        <p class="lead">منهجية عملية لتصميم أتمتة الذكاء الاصطناعي في n8n والأدوات المشابهة، عبر اختيار بنية منطقية تطابق السلوك المطلوب بدل تركيب عقد عشوائية.</p>
+        <div class="hero-actions"><a class="button primary" href="#method">استكشف المنهج</a><a class="button" href="https://github.com/mylawmhmd2-cmd/n8n-Dcwd" target="_blank" rel="noreferrer">عرض المستودع</a></div>
+      </div>
+      <div class="circuit" aria-label="رسم توضيحي لشبكة منطقية">
+        <div class="wire one"></div><div class="wire two"></div><div class="wire three"></div>
+        <div class="node node-a">INPUT<br>إشارة</div><div class="node node-b">LOGIC<br>منطق</div><div class="node node-c">OUTPUT<br>قرار</div>
+      </div>
+    </section>
+
+    <section class="shell section" id="patterns">
+      <div class="section-heading"><h2>أنماط سلوكية قابلة للترجمة</h2><p>ابدأ بالسؤال: ما السلوك الذي يجب أن يضمنه سير العمل؟ ثم اختر عائلة الدائرة الأقرب إليه.</p></div>
+      <div class="grid">
+        <article class="card"><span class="tag">توافق</span><h3>بوابة الأغلبية</h3><p>تقبل القرار عندما تتفق نسبة كافية من نتائج عدة نماذج أو مقيمين.</p></article>
+        <article class="card"><span class="tag">أولوية</span><h3>مشفّر الأولوية</h3><p>يوجّه الطلب إلى المسار الأهم عند وجود مخرجات متعارضة أو مستويات خطورة مختلفة.</p></article>
+        <article class="card"><span class="tag">استقرار</span><h3>Latch / Hysteresis</h3><p>يمنع التقلب حول عتبة الثقة ويحافظ على القرار حتى يتغير الدليل بما يكفي.</p></article>
+        <article class="card"><span class="tag">ذاكرة</span><h3>عداد / Accumulator</h3><p>يحفظ المحاولات والتغطية والأدلة كي لا يعامل كل تشغيل كأنه منفصل تمامًا.</p></article>
+        <article class="card"><span class="tag">حالة</span><h3>آلة الحالات المنتهية</h3><p>تقيّد انتقالات دورة الحياة وتمنع القفز إلى حالات غير مسموحة.</p></article>
+        <article class="card"><span class="tag">تعافٍ</span><h3>حلقة التغذية الراجعة</h3><p>تعيد الأجزاء الفاشلة فقط بدل إعادة العملية كاملة، مع حد واضح للمحاولات.</p></article>
+      </div>
+    </section>
+
+    <section class="shell section" id="method">
+      <div class="section-heading"><h2>من السلوك إلى عقد n8n</h2><p>سير عمل من خمس خطوات يحافظ على الوضوح، ويجعل حالات الحافة والفشل جزءًا من التصميم.</p></div>
+      <div class="method">
+        <article class="step"><h3>حلّل السلوك</h3><p>حدّد المدخلات، المخرجات، والضمان المطلوب.</p></article>
+        <article class="step"><h3>اختر النمط</h3><p>طابق السلوك مع دائرة أو تركيب هجين.</p></article>
+        <article class="step"><h3>اشرح العلاقة</h3><p>وثّق كيف تتحول الإشارات إلى قرار.</p></article>
+        <article class="step"><h3>ترجم العقد</h3><p>اربط كل عنصر بعقدة n8n أو كود مستقل.</p></article>
+        <article class="step"><h3>اختبر الحدود</h3><p>اختبر التزامن، التهيئة، التكرار والفشل.</p></article>
+      </div>
+    </section>
+
+    <section class="shell section" id="examples">
+      <div class="section-heading"><h2>أمثلة جاهزة للتجربة</h2><p>ملفات JavaScript صغيرة توضّح أنماطًا متكررة في تصميم الأتمتة.</p></div>
+      <div class="examples">
+        <div class="example-list">
+          <a class="example" href="examples/majority-gate.js" download><span><strong>majority-gate.js</strong><span>تجميع نتائج متعددة بعتبة توافق</span></span><span class="download">تحميل ↓</span></a>
+          <a class="example" href="examples/priority-encoder.js" download><span><strong>priority-encoder.js</strong><span>اختيار المسار بحسب الأولوية</span></span><span class="download">تحميل ↓</span></a>
+          <a class="example" href="examples/hysteresis-router.js" download><span><strong>hysteresis-router.js</strong><span>تثبيت القرار قرب العتبة</span></span><span class="download">تحميل ↓</span></a>
+          <a class="example" href="examples/state-machine.js" download><span><strong>state-machine.js</strong><span>إدارة حالات دورة الحياة</span></span><span class="download">تحميل ↓</span></a>
+        </div>
+        <aside class="quote"><blockquote>«لا ينبغي اعتبار تشبيه الدائرة ضمانًا أمنيًا؛ يجب فصل الأسرار، والتحقق من الصلاحيات، وإضافة مسار فشل آمن.»</blockquote><small>مبدأ السلامة في المشروع</small></aside>
+      </div>
+      <div class="notice">هذه الصفحة توثيق ثابت للمشروع. لا تُرسل بيانات إلى خادم خارجي، وروابط التحميل تشير إلى ملفات الأمثلة الموجودة في المستودع نفسه.</div>
+    </section>
+  </main>
+
+  <footer><div class="shell footer-inner"><span>© <span id="year"></span> Digital Circuit Workflow Design</span><span>مبني من محتوى المستودع الأصلي · <a href="https://github.com/mylawmhmd2-cmd/n8n-Dcwd" target="_blank" rel="noreferrer">المصدر على GitHub</a></span></div></footer>
+  <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>
