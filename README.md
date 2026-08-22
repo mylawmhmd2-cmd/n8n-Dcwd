@@ -17,6 +17,7 @@
 | تذكّر النتائج | Counter / Accumulator | حفظ المحاولات والتغطية والأدلة |
 | إدارة دورة حياة | Finite State Machine | منع الانتقالات غير المسموحة |
 | إعادة المحاولة الذكية | Feedback Loop | إعادة الأجزاء الفاشلة فقط |
+| اعتماد المحتوى الآمن | Safety Interlock + OR Gate | نشر المحتوى فقط عند نجاح الأمان وملاءمة واحدة على الأقل |
 
 ## منهج التصميم
 
@@ -34,7 +35,8 @@ SKILL.md                         المنهج الكامل
 examples/majority-gate.js        تصويت عدة مخرجات
 examples/priority-encoder.js     حل التعارض حسب الأولوية
 examples/hysteresis-router.js    تثبيت قرار قريب من العتبة
-examples/state-machine.js        آلة حالات مع حد للتكرار
+examples/state-machine.js                         آلة حالات مع حد للتكرار
+examples/safety-interlock-content-approval/        بوابة أمان لاعتماد محتوى AI مع مخطط n8n ومناظره الإلكتروني
 ```
 
 ## ملاحظة أمنية

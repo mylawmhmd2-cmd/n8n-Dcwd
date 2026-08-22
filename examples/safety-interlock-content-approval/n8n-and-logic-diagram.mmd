@@ -1,0 +1,35 @@
+flowchart LR
+  subgraph N8N["مخطط Workflow في n8n: اعتماد محتوى AI"]
+    T["Webhook / Google Drive Trigger"] --> G["Generate Draft"]
+    G --> E1["AI Evaluator 1\nBrand Fit: A"]
+    G --> E2["AI Evaluator 2\nPlatform Fit: B"]
+    G --> E3["Safety Evaluator\nMandatory: S"]
+    E1 --> C["Code Node\nNormalize results"]
+    E2 --> C
+    E3 --> C
+    C --> L["Code Node\nLogic Gate\nS AND (A OR B)"]
+    L --> I{"IF Node\napproved = true?"}
+    I -->|Yes| P["Publish / Queue"]
+    I -->|No| R["Human Review\nTelegram / Airtable"]
+  end
+
+  subgraph LOGIC["النظير الإلكتروني: Safety Interlock + OR Gate"]
+    A["A: Brand Fit"] --> OR["OR\nA + B"]
+    B["B: Platform Fit"] --> OR
+    OR --> AND["AND\nS · (A + B)"]
+    S["S: Safety Pass"] --> AND
+    AND --> Y{"Y = 1?"}
+    Y -->|1| OUT1["Auto Publish"]
+    Y -->|0| OUT0["Human Review"]
+  end
+
+  L -. "نفس السلوك المنطقي" .-> AND
+  P -. "مخرج" .-> OUT1
+  R -. "مخرج" .-> OUT0
+
+  classDef n8n fill:#e8f4ff,stroke:#1976d2,color:#0d47a1
+  classDef ai fill:#f3e5f5,stroke:#7b1fa2,color:#4a148c
+  classDef logic fill:#fff3e0,stroke:#ef6c00,color:#e65100
+  class T,G,C,L,I,P,R n8n
+  class E1,E2,E3 ai
+  class A,B,S,OR,AND,Y,OUT1,OUT0 logic
