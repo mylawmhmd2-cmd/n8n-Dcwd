@@ -139,7 +139,7 @@ When code spans multiple slices, provide the code in slice order and explain the
 
 في n8n، ضع عقدة `Code` للتدقيق بعد تطبيع مخرجات النماذج وقبل `IF` أو `Switch`. لا تجعل `Majority Gate` وحدها حارسًا للإنصاف؛ فالأغلبية قد تخفي إخفاقًا حرجًا في مجموعة صغيرة. اقرأ `decision` و`gate_pass` و`human_review_required` و`evidence_refs` في العقد اللاحقة، ولا تعتمد على `score` وحده.
 
-للتطبيق التفصيلي والكود الجاهز، استخدم المهارة المرفقة `bias-audit-interlock`، أو ابدأ من المثال [Bias Audit & Fairness Interlock](examples/bias-audit-interlock/README.md).
+للتطبيق التفصيلي والكود الجاهز، استخدم المهارة المرفقة `BAI`، أو ابدأ من المثال [Bias Audit & Fairness Interlock](examples/bias-audit-interlock/README.md).
 
 ## Quality Checklist
 
