@@ -123,6 +123,24 @@ Produce actual JavaScript code for n8n Function nodes that implements the mapped
 
 When code spans multiple slices, provide the code in slice order and explain the handoff contract between each Function node or workflow. Keep local state ownership clear and never rely on undocumented shared mutable state.
 
+## Bias Audit & Fairness Interlock
+
+عند تصميم Workflow يتخذ قرارًا مؤثرًا على أشخاص أو فرص أو وصول أو ترتيب أو نشر، أضف طبقة تدقيق تحيز قبل عقدة القرار. لا تفترض أن النموذج محايد، ولا تساوِ بين اجتياز فحص واحد وغياب التحيز.
+
+نفّذ هذا المسار: حدّد القرار ومستوى المخاطر والمجموعات التي يجب حمايتها؛ ثبّت عقد البيانات والنسخ ومعرّفات التتبع؛ افحص التمثيل وجودة العينات؛ شغّل تقييمًا مجزأً واختبارات مقابلة؛ طبّق `Safety Interlock` على الشروط الحرجة؛ ثم أرسل الإخفاق أو نقص الدليل إلى `HUMAN_REVIEW` أو `HOLD` وسجّل الأدلة.
+
+| شريحة التدقيق | المدخلات | المخرج | النظير الرقمي | حد الفشل |
+|---|---|---|---|---|
+| تعريف السياسة | الغرض، المخاطر، المجموعات، النسخة | سياسة قابلة للتنفيذ | مواصفات الدائرة | سياسة ناقصة أو غير قابلة للتتبع |
+| تقييم مجزأ | نتائج مصنفة وأحجام عينات | قبول، TPR، FPR وفروقها | Comparator Bank | فجوة تتجاوز العتبة أو عينة صغيرة |
+| اختبار مقابل | زوج يغيّر عاملًا واحدًا | اتساق القرار والدرجة | Counterfactual Comparator | تغير غير مبرر |
+| بوابة القرار | المؤشرات، الأدلة، مستوى المخاطر | `AUTO_PASS` أو مسار آمن | Safety Interlock | إخفاق حرج أو نقص دليل |
+| سجل ومراجعة | القرار ومعرّف الارتباط | سجل تدقيق وطابور بشري | Latch / State Store | فقدان النسخة أو التكرار |
+
+في n8n، ضع عقدة `Code` للتدقيق بعد تطبيع مخرجات النماذج وقبل `IF` أو `Switch`. لا تجعل `Majority Gate` وحدها حارسًا للإنصاف؛ فالأغلبية قد تخفي إخفاقًا حرجًا في مجموعة صغيرة. اقرأ `decision` و`gate_pass` و`human_review_required` و`evidence_refs` في العقد اللاحقة، ولا تعتمد على `score` وحده.
+
+للتطبيق التفصيلي والكود الجاهز، استخدم المهارة المرفقة `bias-audit-interlock`، أو ابدأ من المثال [Bias Audit & Fairness Interlock](examples/bias-audit-interlock/README.md).
+
 ## Quality Checklist
 
 Before delivering the final design, verify:

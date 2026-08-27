@@ -44,6 +44,7 @@
 | إدارة دورة حياة | Finite State Machine | منع الانتقالات غير المسموحة |
 | إعادة الأجزاء الفاشلة فقط | Feedback Loop | تحسين الجزء الفاشل مع حد واضح للمحاولات |
 | اعتماد آمن | Safety Interlock + OR Gate | النشر فقط عند نجاح فحص الأمان وشرط قبول مناسب |
+| تدقيق الإنصاف | Comparator Bank + Safety Interlock + Latch/Hysteresis | فحص الفروق والاختبارات المقابلة ومنع القرار عند نقص الدليل |
 
 ## المنهج
 
@@ -58,6 +59,7 @@ examples/priority-encoder.js                         حل التعارض حسب 
 examples/hysteresis-router.js                        تثبيت قرار قريب من العتبة
 examples/state-machine.js                            آلة حالات مع حد للتكرار
 examples/safety-interlock-content-approval/          مثال اعتماد محتوى AI مع بوابة أمان
+examples/bias-audit-interlock/                       مثال تدقيق تحيز وبوابة إنصاف
 index.html                                           صفحة عرض ثابتة للمشروع
 ```
 

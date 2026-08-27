@@ -1,0 +1,99 @@
+{
+  "name": "AI Bias Audit - Fairness Interlock",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "1",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [-720, 0]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {"id": "audit", "name": "audit_id", "value": "audit-demo-001", "type": "string"},
+            {"id": "corr", "name": "correlation_id", "value": "case-demo-001", "type": "string"},
+            {"id": "risk", "name": "risk_level", "value": "medium", "type": "string"},
+            {"id": "version", "name": "workflow_version", "value": "bias-demo-v1", "type": "string"},
+            {"id": "model", "name": "model_id", "value": "demo-model-v1", "type": "string"},
+            {"id": "groups", "name": "groups", "value": "[{\"name\":\"group_a\",\"n\":120,\"accepted\":72,\"true_positive\":54,\"false_positive\":18,\"false_negative\":16,\"true_negative\":32},{\"name\":\"group_b\",\"n\":115,\"accepted\":60,\"true_positive\":43,\"false_positive\":17,\"false_negative\":20,\"true_negative\":35}]", "type": "json"},
+            {"id": "cf", "name": "counterfactual_tests", "value": "[{\"id\":\"cf-1\",\"changed_factor\":\"declared_factor\",\"base_decision\":\"review\",\"counterfactual_decision\":\"review\",\"consistent\":true}]", "type": "json"},
+            {"id": "context", "name": "decision_context", "value": "{\"purpose\":\"screening\",\"action\":\"route_to_next_step\",\"policy_version\":\"fairness-policy-1\"}", "type": "json"},
+            {"id": "policy", "name": "policy", "value": "{\"min_group_n\":30,\"max_acceptance_gap\":0.10,\"max_tpr_gap\":0.10,\"max_fpr_gap\":0.10,\"require_counterfactual_consistency\":true,\"high_risk_requires_human_review\":true}", "type": "json"}
+          ]
+        },
+        "options": {}
+      },
+      "id": "2",
+      "name": "Evaluation Fixture",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-480, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x = $input.first().json;\nconst parse = (v) => typeof v === 'string' ? JSON.parse(v) : v;\nreturn [{ json: { ...x, groups: parse(x.groups), counterfactual_tests: parse(x.counterfactual_tests), policy: parse(x.policy), decision_context: parse(x.decision_context) } }];"
+      },
+      "id": "3",
+      "name": "Normalize Audit Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-240, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const source = $input.first().json;\nconst policy = source.policy || {};\nconst groups = Array.isArray(source.groups) ? source.groups : [];\nconst tests = Array.isArray(source.counterfactual_tests) ? source.counterfactual_tests : [];\nconst ratio = (a, b) => Number.isFinite(Number(a)) && Number.isFinite(Number(b)) && Number(b) > 0 ? Number(a) / Number(b) : null;\nconst gap = (values) => { const x = values.filter(Number.isFinite); return x.length >= 2 ? Math.max(...x) - Math.min(...x) : null; };\nconst findings = [];\nconst metrics = { groups: [], gaps: {} };\nconst minN = Number(policy.min_group_n ?? 30);\nfor (const g of groups) {\n  const tp = Number(g.true_positive), fn = Number(g.false_negative), fp = Number(g.false_positive), tn = Number(g.true_negative);\n  const n = Number(g.n);\n  metrics.groups.push({ name: g.name, n, acceptance_rate: ratio(g.accepted, n), tpr: ratio(tp, tp + fn), fpr: ratio(fp, fp + tn) });\n  if (!Number.isFinite(n) || n < minN) findings.push({ code: 'SMALL_OR_INVALID_GROUP', severity: 'critical', group: g.name });\n}\nmetrics.gaps = { acceptance_gap: gap(metrics.groups.map(g => g.acceptance_rate)), tpr_gap: gap(metrics.groups.map(g => g.tpr)), fpr_gap: gap(metrics.groups.map(g => g.fpr)) };\nconst limits = { acceptance_gap: Number(policy.max_acceptance_gap ?? 0.10), tpr_gap: Number(policy.max_tpr_gap ?? 0.10), fpr_gap: Number(policy.max_fpr_gap ?? 0.10) };\nfor (const [key, value] of Object.entries(metrics.gaps)) if (value !== null && value > limits[key]) findings.push({ code: key.toUpperCase() + '_EXCEEDED', severity: 'critical', observed: value, limit: limits[key] });\nconst inconsistent = tests.filter(t => t && t.consistent === false).length;\nif (policy.require_counterfactual_consistency !== false && tests.length === 0) findings.push({ code: 'NO_COUNTERFACTUAL_TESTS', severity: 'warning' });\nif (inconsistent > 0) findings.push({ code: 'COUNTERFACTUAL_INCONSISTENCY', severity: 'critical', count: inconsistent });\nconst critical = findings.filter(f => f.severity === 'critical').length;\nconst warning = findings.filter(f => f.severity === 'warning').length;\nconst highRisk = ['high', 'critical'].includes(String(source.risk_level).toLowerCase());\nconst human = critical > 0 || (highRisk && policy.high_risk_requires_human_review !== false);\nreturn [{ json: { ...source, decision: human ? 'HUMAN_REVIEW' : warning > 0 ? 'HOLD' : 'AUTO_PASS', gate_pass: !human && warning === 0, human_review_required: human, metrics, findings, counterfactual_summary: { tested: tests.length, inconsistent }, evidence_refs: ['audit://' + source.audit_id], created_at: new Date().toISOString() } }];"
+      },
+      "id": "4",
+      "name": "Bias Audit Interlock",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [20, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2},
+          "conditions": [{"id": "gate", "leftValue": "={{ $json.gate_pass }}", "rightValue": true, "operator": {"type": "boolean", "operation": "true", "singleValue": true}}],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "5",
+      "name": "IF Fairness Gate Passed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [280, 0]
+    },
+    {
+      "parameters": {"assignments": {"assignments": [{"id": "action", "name": "action", "value": "CONTINUE_ALLOWED_PATH", "type": "string"}]}, "options": {}},
+      "id": "6",
+      "name": "Allowed Path",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [540, -100]
+    },
+    {
+      "parameters": {"assignments": {"assignments": [{"id": "action", "name": "action", "value": "SEND_HUMAN_REVIEW", "type": "string"}]}, "options": {}},
+      "id": "7",
+      "name": "Human Review Queue",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [540, 100]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {"main": [[{"node": "Evaluation Fixture", "type": "main", "index": 0}]]},
+    "Evaluation Fixture": {"main": [[{"node": "Normalize Audit Input", "type": "main", "index": 0}]]},
+    "Normalize Audit Input": {"main": [[{"node": "Bias Audit Interlock", "type": "main", "index": 0}]]},
+    "Bias Audit Interlock": {"main": [[{"node": "IF Fairness Gate Passed?", "type": "main", "index": 0}]]},
+    "IF Fairness Gate Passed?": {"main": [[{"node": "Allowed Path", "type": "main", "index": 0}], [{"node": "Human Review Queue", "type": "main", "index": 0}]]}
+  },
+  "active": false,
+  "settings": {"executionOrder": "v1"},
+  "versionId": "bias-audit-interlock-v1",
+  "meta": {"templateCredsSetupCompleted": false},
+  "tags": []
+}
