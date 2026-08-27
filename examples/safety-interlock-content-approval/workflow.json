@@ -7,17 +7,51 @@
       "name": "Manual Trigger",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [-720, 0]
+      "position": [
+        -720,
+        0
+      ]
     },
     {
       "parameters": {
         "assignments": {
           "assignments": [
-            {"id": "content", "name": "content", "value": "مسودة منشور عن فوائد أتمتة المحتوى باستخدام n8n.", "type": "string"},
-            {"id": "brandFit", "name": "brandFit", "value": "true", "type": "boolean"},
-            {"id": "platformFit", "name": "platformFit", "value": "false", "type": "boolean"},
-            {"id": "safetyPass", "name": "safetyPass", "value": "true", "type": "boolean"},
-            {"id": "contentId", "name": "contentId", "value": "demo-content-001", "type": "string"}
+            {
+              "id": "content",
+              "name": "content",
+              "value": "مسودة منشور عن فوائد أتمتة المحتوى باستخدام n8n.",
+              "type": "string"
+            },
+            {
+              "id": "brandFit",
+              "name": "brandFit",
+              "value": "true",
+              "type": "boolean"
+            },
+            {
+              "id": "platformFit",
+              "name": "platformFit",
+              "value": "false",
+              "type": "boolean"
+            },
+            {
+              "id": "safetyPass",
+              "name": "safetyPass",
+              "value": "true",
+              "type": "boolean"
+            },
+            {
+              "id": "contentId",
+              "name": "contentId",
+              "value": "demo-content-001",
+              "type": "string"
+            },
+            {
+              "id": "bai",
+              "name": "bai_audit",
+              "value": "{\"gate_pass\":true,\"human_review_required\":false,\"evidence_refs\":[\"audit://demo-001\"]}",
+              "type": "json"
+            }
           ]
         },
         "options": {}
@@ -26,7 +60,10 @@
       "name": "AI Evaluation Demo",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [-480, 0]
+      "position": [
+        -480,
+        0
+      ]
     },
     {
       "parameters": {
@@ -36,24 +73,57 @@
       "name": "Normalize AI Signals",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-240, 0]
+      "position": [
+        -240,
+        0
+      ]
     },
     {
       "parameters": {
-        "jsCode": "const x = $input.first().json;\nconst { brandFit: A, platformFit: B, safetyPass: S } = x.signals;\n\n// Digital analogue: safety interlock + OR gate.\n// A or B can establish relevance, but safety S is mandatory.\nconst relevance = A || B;\nconst approved = S && relevance;\n\nreturn [{\n  json: {\n    ...x,\n    logic: { formula: 'S AND (A OR B)', A, B, S, relevance, approved },\n    route: approved ? 'AUTO_PUBLISH' : 'HUMAN_REVIEW',\n    decisionReason: approved ? 'safety_passed_and_relevance_passed' : 'mandatory_safety_or_relevance_failed'\n  }\n}];"
+        "jsCode": "const x = $input.first().json;\nconst audit = x.bai_audit || {};\nconst hasEvidence = Array.isArray(audit.evidence_refs) && audit.evidence_refs.length > 0;\nconst gatePass = audit.gate_pass === true && audit.human_review_required !== true && hasEvidence;\nreturn [{\n  json: {\n    ...x,\n    bai: {\n      gate_pass: gatePass,\n      evidence_present: hasEvidence,\n      source_gate_pass: audit.gate_pass === true,\n      human_review_required: audit.human_review_required === true\n    },\n    baiDecision: gatePass ? 'BAI_PASS' : 'BAI_REVIEW'\n  }\n}];"
+      },
+      "id": "3b",
+      "name": "BAI Fairness Pre-Gate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -100,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x = $input.first().json;\nconst { brandFit: A, platformFit: B, safetyPass: S } = x.signals;\nconst F = x.bai?.gate_pass === true;\n\n// Digital analogue: BAI fairness pre-gate + safety interlock + OR gate.\n// Relevance and safety are insufficient when the fairness evidence gate fails.\nconst relevance = A || B;\nconst approved = F && S && relevance;\n\nreturn [{\n  json: {\n    ...x,\n    logic: { formula: 'F AND S AND (A OR B)', F, A, B, S, relevance, approved },\n    route: approved ? 'AUTO_PUBLISH' : 'HUMAN_REVIEW',\n    decisionReason: approved ? 'bai_safety_and_relevance_passed' : 'bai_safety_or_relevance_failed'\n  }\n}];"
       },
       "id": "4",
       "name": "Safety Interlock Logic Gate",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [20, 0]
+      "position": [
+        20,
+        0
+      ]
     },
     {
       "parameters": {
         "conditions": {
-          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2},
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
           "conditions": [
-            {"id": "approved", "leftValue": "={{ $json.logic.approved }}", "rightValue": true, "operator": {"type": "boolean", "operation": "true", "singleValue": true}}
+            {
+              "id": "approved",
+              "leftValue": "={{ $json.logic.approved }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
           ],
           "combinator": "and"
         },
@@ -63,41 +133,140 @@
       "name": "IF Approved?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [280, 0]
+      "position": [
+        280,
+        0
+      ]
     },
     {
       "parameters": {
-        "assignments": {"assignments": [{"id": "action", "name": "action", "value": "PUBLISH_OR_QUEUE", "type": "string"}]},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "action",
+              "name": "action",
+              "value": "PUBLISH_OR_QUEUE",
+              "type": "string"
+            }
+          ]
+        },
         "options": {}
       },
       "id": "6",
       "name": "Publish Queue",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [540, -100]
+      "position": [
+        540,
+        -100
+      ]
     },
     {
       "parameters": {
-        "assignments": {"assignments": [{"id": "action", "name": "action", "value": "SEND_HUMAN_REVIEW", "type": "string"}]},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "action",
+              "name": "action",
+              "value": "SEND_HUMAN_REVIEW",
+              "type": "string"
+            }
+          ]
+        },
         "options": {}
       },
       "id": "7",
       "name": "Human Review",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [540, 100]
+      "position": [
+        540,
+        100
+      ]
     }
   ],
   "connections": {
-    "Manual Trigger": {"main": [[{"node": "AI Evaluation Demo", "type": "main", "index": 0}]]},
-    "AI Evaluation Demo": {"main": [[{"node": "Normalize AI Signals", "type": "main", "index": 0}]]},
-    "Normalize AI Signals": {"main": [[{"node": "Safety Interlock Logic Gate", "type": "main", "index": 0}]]},
-    "Safety Interlock Logic Gate": {"main": [[{"node": "IF Approved?", "type": "main", "index": 0}]]},
-    "IF Approved?": {"main": [[{"node": "Publish Queue", "type": "main", "index": 0}], [{"node": "Human Review", "type": "main", "index": 0}]]}
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Evaluation Demo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Evaluation Demo": {
+      "main": [
+        [
+          {
+            "node": "Normalize AI Signals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize AI Signals": {
+      "main": [
+        [
+          {
+            "node": "BAI Fairness Pre-Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Safety Interlock Logic Gate": {
+      "main": [
+        [
+          {
+            "node": "IF Approved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Approved?": {
+      "main": [
+        [
+          {
+            "node": "Publish Queue",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Human Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BAI Fairness Pre-Gate": {
+      "main": [
+        [
+          {
+            "node": "Safety Interlock Logic Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
   "active": false,
-  "settings": {"executionOrder": "v1"},
-  "versionId": "smart-safety-interlock-v1",
-  "meta": {"templateCredsSetupCompleted": false},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "smart-safety-interlock-bai-v2",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
   "tags": []
 }
